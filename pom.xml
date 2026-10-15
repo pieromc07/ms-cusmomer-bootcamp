@@ -65,6 +65,11 @@
             <artifactId>rxjava</artifactId>
             <version>3.1.12</version>
         </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+            <version>3.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -105,6 +110,43 @@
                                     <artifactId>lombok</artifactId>
                                 </path>
                             </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>7.16.0</version>
+
+                <executions>
+                    <execution>
+                        <id>generate-customer-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/ms-customer-api.yaml</inputSpec>
+                            <generatorName>spring</generatorName>
+
+                            <apiPackage>com.nttdata.mscustomer.generated.api</apiPackage>
+                            <modelPackage>com.nttdata.mscustomer.generated.dto</modelPackage>
+
+                            <configOptions>
+                                <useSpringBoot4>true</useSpringBoot4>
+                                <useJackson3>true</useJackson3>
+                                <useJakartaEe>true</useJakartaEe>
+                                <openApiNullable>false</openApiNullable>
+                                <interfaceOnly>true</interfaceOnly>
+                                <useTags>true</useTags>
+                                <reactive>true</reactive>
+                                <useOneOfInterfaces>false</useOneOfInterfaces>
+                            </configOptions>
+
+                            <generateSupportingFiles>true</generateSupportingFiles>
                         </configuration>
                     </execution>
                 </executions>
