@@ -1,4 +1,7 @@
 package com.nttdata.mscustomer.model;
 
-public class BusinessDetails {
+public record BusinessDetails(
+    String legalName,
+    String tradeName
+) {
 }

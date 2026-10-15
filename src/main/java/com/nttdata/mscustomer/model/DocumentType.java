@@ -1,4 +1,8 @@
 package com.nttdata.mscustomer.model;
 
-public class DocumentType {
+public enum DocumentType {
+    DNI,
+    RUC,
+    CE,
+    PASSPORT
 }

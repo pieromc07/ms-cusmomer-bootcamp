@@ -1,4 +1,7 @@
 package com.nttdata.mscustomer.model;
 
-public class CustomerProfile {
+public enum CustomerProfile {
+    STANDARD,
+    VIP,
+    PYME
 }

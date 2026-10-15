@@ -1,5 +1,5 @@
 
-package com.nttdata.mscustomer.repository;
+package com.nttdata.mscustomer.document;
 
 import java.time.Instant;
 
