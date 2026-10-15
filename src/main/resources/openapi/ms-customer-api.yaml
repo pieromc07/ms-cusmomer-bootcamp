@@ -1,0 +1,836 @@
+openapi: 3.0.3
+
+info:
+  title: MS Customer API
+  version: 1.0.0
+  description: API REST para la gestión de clientes personales y empresariales.
+
+servers:
+  - url: http://localhost:8080
+    description: Entorno local
+
+tags:
+  - name: Customers
+    description: Operaciones de gestión de clientes
+
+paths:
+  /api/v1/customers:
+    post:
+      tags:
+        - Customers
+      summary: Create a customer
+      description: >
+        Registers a personal or business customer. 
+        The system generates the identifier, initial status and timestamps. 
+      operationId: createCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomerRequest'
+            examples:
+              personalCustomer:
+                summary: Personal customer
+                value:
+                  customerType: PERSONAL
+                  documentType: DNI
+                  documentNumber: "12345678"
+                  profile: STANDARD
+                  email: ana@example.com
+                  phone: "999888777"
+                  personalDetails:
+                    firstName: Ana
+                    lastName: Torres
+              businessCustomer:
+                summary: Business customer
+                value:
+                  customerType: BUSINESS
+                  documentType: RUC
+                  documentNumber: "20123456789"
+                  profile: PYME
+                  businessDetails:
+                    legalName: Empresa Ejemplo S.A.C.
+                    tradeName: Ejemplo
+      responses:
+        '201':
+          description: Customer created successfully.
+          headers:
+            Location:
+              description: URI of the created customer.
+              schema:
+                type: string
+              example: /api/v1/customers/65f1a8b2c4d9e01234567890
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+
+        '400':
+          description: >
+            Invalid JSON, missing required fields, invalid values, 
+            incompatible customer type, profile or details, 
+            or unsupported fields. 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 400
+                error: BAD_REQUEST
+                message: Invalid customer data
+                path: /api/v1/customers
+
+        '409':
+          description: A customer with the same document identity already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 409
+                error: CONFLICT
+                message: A customer with this document already exists
+                path: /api/v1/customers
+
+        '415':
+          description: Unsupported request content type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 415
+                error: UNSUPPORTED_MEDIA_TYPE
+                message: Unsupported request content type
+                path: /api/v1/customers
+
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 500
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected server error occurred
+                path: /api/v1/customers
+
+    get:
+      tags:
+        - Customers
+      summary: Get all customers
+      description: >
+        Retrieves all customers, including active and inactive customers
+        by default. Optional filters can be used to narrow the results.
+      operationId: getAllCustomers
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter customers by status.
+          schema:
+            $ref: '#/components/schemas/CustomerStatus'
+        - name: customerType
+          in: query
+          required: false
+          description: Filter customers by type.
+          schema:
+            $ref: '#/components/schemas/CustomerType'
+        - name: profile
+          in: query
+          required: false
+          description: Filter customers by profile.
+          schema:
+            $ref: '#/components/schemas/CustomerProfile'
+      responses:
+        '200':
+          description: Customers retrieved successfully. An empty list is returned when no customers match the filters.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Customer'
+        '400':
+          description: Invalid filter value or incompatible customer type and profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 400
+                error: BAD_REQUEST
+                message: Invalid or incompatible customer filters
+                path: /api/v1/customers
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 500
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected server error occurred
+                path: /api/v1/customers
+
+  /api/v1/customers/{id}:
+    get:
+      tags:
+        - Customers
+      summary: Get customer by ID
+      description: Retrieves a customer by its unique identifier. Inactive customers can also be retrieved.
+      operationId: getCustomerById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: MongoDB customer identifier (24 hexadecimal characters).
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          example: '65f1a8b2c4d9e01234567890'
+      responses:
+        '200':
+          description: Customer found successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          description: Invalid customer identifier format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 400
+                error: BAD_REQUEST
+                message: Invalid customer identifier format
+                path: /api/v1/customers/invalid-id
+        '404':
+          description: Customer not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 404
+                error: NOT_FOUND
+                message: Customer not found
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 500
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected server error occurred
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+
+    put:
+      tags:
+        - Customers
+      summary: Update a customer
+      description: >
+        Updates the editable fields of an existing active customer.
+        Customer type, document identity, profile, identifier and creation
+        timestamp cannot be changed. Omitted email and phone values are cleared.
+      operationId: updateCustomer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: MongoDB customer identifier (24 hexadecimal characters).
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          example: '65f1a8b2c4d9e01234567890'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomerRequest'
+            examples:
+              personalCustomer:
+                summary: Update personal customer
+                value:
+                  email: ana.torres@example.com
+                  phone: '999888777'
+                  personalDetails:
+                    firstName: Ana
+                    lastName: Torres
+              businessCustomer:
+                summary: Update business customer
+                value:
+                  email: contacto@ejemplo.com
+                  phone: '987654321'
+                  businessDetails:
+                    legalName: Empresa Ejemplo S.A.C.
+                    tradeName: Ejemplo
+      responses:
+        '200':
+          description: Customer updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          description: Invalid identifier format or invalid request data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 400
+                error: BAD_REQUEST
+                message: Invalid customer update data
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+        '404':
+          description: Customer not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 404
+                error: NOT_FOUND
+                message: Customer not found
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+        '409':
+          description: Customer is inactive or an update rule is violated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 409
+                error: CONFLICT
+                message: Inactive customers cannot be updated
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+        '415':
+          description: Unsupported request content type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 415
+                error: UNSUPPORTED_MEDIA_TYPE
+                message: Unsupported request content type
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 500
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected server error occurred
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+
+    patch:
+      tags:
+        - Customers
+      summary: Partially update a customer
+      description: >
+        Partially updates an existing active customer. Omitted fields retain
+        their current values. Email and phone can be cleared by sending null.
+        Customer identity, type, profile, identifier and creation timestamp
+        cannot be changed.
+      operationId: patchCustomer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: MongoDB customer identifier (24 hexadecimal characters).
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          example: '65f1a8b2c4d9e01234567890'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchCustomerRequest'
+            examples:
+              updatePhone:
+                summary: Update phone number only
+                value:
+                  phone: '999888777'
+              updateEmail:
+                summary: Update email only
+                value:
+                  email: ana.torres@example.com
+              clearEmail:
+                summary: Clear email
+                value:
+                  email: null
+              updatePersonalName:
+                summary: Update personal details
+                value:
+                  personalDetails:
+                    firstName: Ana María
+                    lastName: Torres
+      responses:
+        '200':
+          description: Customer updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          description: Invalid identifier format or invalid request data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 400
+                error: BAD_REQUEST
+                message: Invalid customer update data
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+        '404':
+          description: Customer not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 404
+                error: NOT_FOUND
+                message: Customer not found
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+        '409':
+          description: Customer is inactive or an update rule is violated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 409
+                error: CONFLICT
+                message: Inactive customers cannot be updated
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+        '415':
+          description: Unsupported request content type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 415
+                error: UNSUPPORTED_MEDIA_TYPE
+                message: Unsupported request content type
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 500
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected server error occurred
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+
+    delete:
+      tags:
+        - Customers
+      summary: Deactivate a customer
+      description: >
+        Logically deactivates a customer by changing its status to INACTIVE.
+        The customer record is retained. If the customer is already inactive,
+        the operation still succeeds.
+      operationId: deactivateCustomer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: MongoDB customer identifier (24 hexadecimal characters).
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          example: '65f1a8b2c4d9e01234567890'
+      responses:
+        '204':
+          description: Customer deactivated successfully, or was already inactive.
+        '400':
+          description: Invalid customer identifier format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 400
+                error: BAD_REQUEST
+                message: Invalid customer identifier format
+                path: /api/v1/customers/invalid-id
+        '404':
+          description: Customer not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 404
+                error: NOT_FOUND
+                message: Customer not found
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: 500
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected server error occurred
+                path: /api/v1/customers/65f1a8b2c4d9e01234567890
+
+components:
+  schemas:
+
+    CustomerType:
+      type: string
+      enum:
+        - PERSONAL
+        - BUSINESS
+
+    CustomerProfile:
+      type: string
+      enum:
+        - STANDARD
+        - VIP
+        - PYME
+
+    CustomerStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+
+    DocumentType:
+      type: string
+      enum:
+        - DNI
+        - RUC
+        - CE
+        - PASSPORT
+
+    PersonalDetails:
+      type: object
+      additionalProperties: false
+      required:
+        - firstName
+        - lastName
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          example: Ana
+        lastName:
+          type: string
+          minLength: 1
+          example: Torres
+
+    BusinessDetails:
+      type: object
+      additionalProperties: false
+      required:
+        - legalName
+      properties:
+        legalName:
+          type: string
+          minLength: 1
+          example: Empresa Ejemplo S.A.C.
+        tradeName:
+          type: string
+          nullable: true
+          example: Ejemplo
+
+    Customer:
+      oneOf:
+        - $ref: '#/components/schemas/CustomerPersonal'
+        - $ref: '#/components/schemas/CustomerBusiness'
+      discriminator:
+        propertyName: customerType
+        mapping:
+          PERSONAL: '#/components/schemas/CustomerPersonal'
+          BUSINESS: '#/components/schemas/CustomerBusiness'
+
+    CustomerPersonal:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - customerType
+        - documentType
+        - documentNumber
+        - profile
+        - status
+        - createdAt
+        - updatedAt
+        - personalDetails
+      properties:
+        id:
+          type: string
+          readOnly: true
+          example: 65f1a8b2c4d9e01234567890
+        customerType:
+          type: string
+          enum: [PERSONAL]
+        documentType:
+          type: string
+          enum:
+            - DNI
+            - CE
+            - PASSPORT
+        documentNumber:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        profile:
+          type: string
+          enum: [STANDARD, VIP]
+        status:
+          $ref: '#/components/schemas/CustomerStatus'
+        personalDetails:
+          $ref: '#/components/schemas/PersonalDetails'
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    CustomerBusiness:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - customerType
+        - documentType
+        - documentNumber
+        - profile
+        - status
+        - createdAt
+        - updatedAt
+        - businessDetails
+      properties:
+        id:
+          type: string
+          readOnly: true
+          example: 65f1a8b2c4d9e01234567890
+        customerType:
+          type: string
+          enum: [BUSINESS]
+        documentType:
+          type: string
+          enum:
+            - RUC
+        documentNumber:
+          type: string
+          pattern: '^20[0-9]{9}$'
+          example: '20123456789'
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        profile:
+          type: string
+          enum: [STANDARD, PYME]
+        status:
+          $ref: '#/components/schemas/CustomerStatus'
+        businessDetails:
+          $ref: '#/components/schemas/BusinessDetails'
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    ApiError:
+      type: object
+      required:
+        - status
+        - error
+        - message
+        - path
+      properties:
+        status:
+          type: integer
+          example: 409
+        error:
+          type: string
+          example: CONFLICT
+        message:
+          type: string
+          example: A customer with this document already exists
+        path:
+          type: string
+          example: /api/v1/customers
+
+    CreateCustomerRequest:
+      oneOf:
+        - $ref: '#/components/schemas/CreatePersonalCustomerRequest'
+        - $ref: '#/components/schemas/CreateBusinessCustomerRequest'
+      discriminator:
+        propertyName: customerType
+        mapping:
+          PERSONAL: '#/components/schemas/CreatePersonalCustomerRequest'
+          BUSINESS: '#/components/schemas/CreateBusinessCustomerRequest'
+
+    UpdateCustomerRequest:
+      oneOf:
+        - $ref: '#/components/schemas/UpdatePersonalCustomerRequest'
+        - $ref: '#/components/schemas/UpdateBusinessCustomerRequest'
+
+    CreatePersonalCustomerRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - customerType
+        - documentType
+        - documentNumber
+        - profile
+        - personalDetails
+      properties:
+        customerType:
+          type: string
+          enum:
+            - PERSONAL
+        documentType:
+          type: string
+          enum:
+            - DNI
+            - CE
+            - PASSPORT
+        documentNumber:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        profile:
+          type: string
+          enum:
+            - STANDARD
+            - VIP
+        personalDetails:
+          $ref: '#/components/schemas/PersonalDetails'
+
+    CreateBusinessCustomerRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - customerType
+        - documentType
+        - documentNumber
+        - profile
+        - businessDetails
+      properties:
+        customerType:
+          type: string
+          enum:
+            - BUSINESS
+        documentType:
+          type: string
+          enum:
+            - RUC
+        documentNumber:
+          type: string
+          pattern: '^20[0-9]{9}$'
+          example: '20123456789'
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        profile:
+          type: string
+          enum:
+            - STANDARD
+            - PYME
+        businessDetails:
+          $ref: '#/components/schemas/BusinessDetails'
+
+    UpdatePersonalCustomerRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - personalDetails
+      properties:
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        personalDetails:
+          $ref: '#/components/schemas/PersonalDetails'
+
+    UpdateBusinessCustomerRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - businessDetails
+      properties:
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        businessDetails:
+          $ref: '#/components/schemas/BusinessDetails'
+
+    PatchCustomerRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        personalDetails:
+          $ref: '#/components/schemas/PersonalDetails'
+        businessDetails:
+          $ref: '#/components/schemas/BusinessDetails'

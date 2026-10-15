@@ -1,0 +1,17 @@
+
+services:
+  mongodb:
+    image: mongo:8
+    container_name: ms-customer-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mscustomer
+      MONGO_INITDB_ROOT_PASSWORD: mscustomer123
+      MONGO_INITDB_DATABASE: customerdb
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:
