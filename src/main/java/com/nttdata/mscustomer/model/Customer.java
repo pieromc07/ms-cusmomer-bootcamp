@@ -2,6 +2,7 @@ package com.nttdata.mscustomer.model;
 
 import lombok.Data;
 import java.time.Instant;
+import java.util.UUID;
 
 @Data
 public class Customer {
@@ -63,5 +64,31 @@ public class Customer {
         this.businessDetails = businessDetails;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public Customer (
+            CustomerType customerType,
+            CustomerProfile profile,
+            DocumentType documentType,
+            String documentNumber,
+            String email,
+            String phone,
+            PersonalDetails personalDetails,
+            BusinessDetails businessDetails
+    ) {
+        this(
+                UUID.randomUUID().toString(),
+                customerType,
+                profile,
+                documentType,
+                documentNumber,
+                email,
+                phone,
+                CustomerStatus.ACTIVE,
+                personalDetails,
+                businessDetails,
+                Instant.now(),
+                Instant.now()
+        );
     }
 }
