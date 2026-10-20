@@ -1,7 +1,5 @@
-
 spring:
   application:
     name: ms-customer
-  data:
-    mongodb:
-      uri: ${MONGODB_URI:mongodb://mscustomer:mscustomer123@localhost:27017/customerdb?authSource=admin}
+  mongodb:
+    uri: mongodb://mscustomer:mscustomer123@localhost:27017/customerdb?authSource=admin

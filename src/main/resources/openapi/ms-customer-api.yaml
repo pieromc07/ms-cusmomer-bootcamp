@@ -561,14 +561,52 @@ components:
           example: Ejemplo
 
     Customer:
-      oneOf:
-        - $ref: '#/components/schemas/CustomerPersonal'
-        - $ref: '#/components/schemas/CustomerBusiness'
-      discriminator:
-        propertyName: customerType
-        mapping:
-          PERSONAL: '#/components/schemas/CustomerPersonal'
-          BUSINESS: '#/components/schemas/CustomerBusiness'
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - customerType
+        - documentType
+        - documentNumber
+        - profile
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: 65f1a8b2c4d9e01234567890
+        customerType:
+          type: string
+          enum: [PERSONAL, BUSINESS]
+        documentType:
+          type: string
+          enum: [DNI, CE, PASSPORT, RUC]
+        documentNumber:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        profile:
+          type: string
+          enum: [STANDARD, VIP, PYME]
+        status:
+          $ref: '#/components/schemas/CustomerStatus'
+        personalDetails:
+          $ref: '#/components/schemas/PersonalDetails'
+        businessDetails:
+          $ref: '#/components/schemas/BusinessDetails'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     CustomerPersonal:
       type: object
@@ -586,7 +624,6 @@ components:
       properties:
         id:
           type: string
-          readOnly: true
           example: 65f1a8b2c4d9e01234567890
         customerType:
           type: string
@@ -617,11 +654,9 @@ components:
         createdAt:
           type: string
           format: date-time
-          readOnly: true
         updatedAt:
           type: string
           format: date-time
-          readOnly: true
 
     CustomerBusiness:
       type: object
@@ -639,7 +674,6 @@ components:
       properties:
         id:
           type: string
-          readOnly: true
           example: 65f1a8b2c4d9e01234567890
         customerType:
           type: string
@@ -669,11 +703,9 @@ components:
         createdAt:
           type: string
           format: date-time
-          readOnly: true
         updatedAt:
           type: string
           format: date-time
-          readOnly: true
 
     ApiError:
       type: object
@@ -697,14 +729,37 @@ components:
           example: /api/v1/customers
 
     CreateCustomerRequest:
-      oneOf:
-        - $ref: '#/components/schemas/CreatePersonalCustomerRequest'
-        - $ref: '#/components/schemas/CreateBusinessCustomerRequest'
-      discriminator:
-        propertyName: customerType
-        mapping:
-          PERSONAL: '#/components/schemas/CreatePersonalCustomerRequest'
-          BUSINESS: '#/components/schemas/CreateBusinessCustomerRequest'
+      type: object
+      additionalProperties: false
+      required:
+        - customerType
+        - documentType
+        - documentNumber
+        - profile
+      properties:
+        customerType:
+          type: string
+          enum: [PERSONAL, BUSINESS]
+        documentType:
+          type: string
+          enum: [DNI, CE, PASSPORT, RUC]
+        documentNumber:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        profile:
+          type: string
+          enum: [STANDARD, VIP, PYME]
+        personalDetails:
+          $ref: '#/components/schemas/PersonalDetails'
+        businessDetails:
+          $ref: '#/components/schemas/BusinessDetails'
 
     UpdateCustomerRequest:
       oneOf:
